@@ -45,7 +45,7 @@
              Memory requests higher than this will throw an 
              InvalidResourceRequestException (default value 8192) -->
         <name>yarn.scheduler.maximum-allocation-mb</name>
-        <value>2048</value>
+        <value>6144</value>
         <final>true</final>
       </property>
     <property>
