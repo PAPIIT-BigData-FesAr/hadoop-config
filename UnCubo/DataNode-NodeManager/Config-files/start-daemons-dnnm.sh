@@ -1,45 +1,42 @@
 #!/bin/bash
 
-service ssh start
+# Cargar variables de Hadoop
+source /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
 
-export SPARK_EXECUTOR_HOSTNAME=$(hostname)
 
+# INICIAR SOLO SERVICIOS DE dnnm
+HOSTNAME=$(hostname)
 HADOOP_HOME=/opt/bd/hadoop/
 
-SERVICE1=${HADOOP_HOME}/bin/hdfs
-DAEMON1=datanode
+echo "Iniciando servicios para DNNM: $HOSTNAME"
 
-SERVICE2=${HADOOP_HOME}/bin/yarn
-DAEMON2=nodemanager
+# INICIAR SOLO DATANODE Y NODEMANAGER
+export SPARK_EXECUTOR_HOSTNAME=$(hostname)
 
-# Iniciamos el demonio del DataNode y chequeamos si ha arrancado
-${SERVICE1} --daemon start ${DAEMON1}
-status=$?
-if [ $status -ne 0 ]; then
-  echo "No pudo inicializar el servicio ${DAEMON1}: $status"
-  exit $status
-fi
+echo "Iniciando DataNode..."
+$HADOOP_HOME/bin/hdfs --daemon start datanode
 
-# Iniciamos el demonio del NodeManager y chequeamos si ha arrancado
-${SERVICE2} --daemon start ${DAEMON2}
-status=$?
-if [ $status -ne 0 ]; then
-  echo "No pudo inicializar el servicio ${DAEMON2}: $status"
-  exit $status
-fi
+echo "Iniciando NodeManager..."
+$HADOOP_HOME/bin/yarn --daemon start nodemanager
 
-# Mientras ambos demonio estén vivos, el contenedor sigue activo
-while true
-do 
-  sleep 10
-  if ! ps aux | grep ${DAEMON1} | grep -q -v grep
-  then
-      echo "El demonio ${DAEMON1}  ha fallado"
-      exit 1
-  fi
-  if ! ps aux | grep ${DAEMON2} | grep -q -v grep
-  then
-      echo "El demonio ${DAEMON2}  ha fallado"
-      exit 1
-  fi
+# Verificar procesos
+sleep 5
+echo "Procesos Java en ejecución:"
+jps
+
+# LOOP DE MONITOREO SIMPLIFICADO para dnnm
+while true; do 
+    sleep 30
+    
+    # Verificar DataNode
+    if ! jps | grep -q "DataNode"; then
+        echo "DataNode no está ejecutándose - reintentando..."
+        $HADOOP_HOME/bin/hdfs --daemon start datanode
+    fi
+    
+    # Verificar NodeManager
+    if ! jps | grep -q "NodeManager"; then
+        echo "NodeManager no está ejecutándose - reintentando..."
+        $HADOOP_HOME/bin/yarn --daemon start nodemanager
+    fi
 done

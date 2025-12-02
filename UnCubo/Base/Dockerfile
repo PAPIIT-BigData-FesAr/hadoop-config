@@ -1,5 +1,5 @@
 # Desplegamos una máquina con el SO Linux Ubuntu
-FROM ubuntu:latest
+FROM ubuntu:20.04
 
 MAINTAINER https://www.proyectoa.com
 
@@ -12,8 +12,8 @@ ENV BASE_DIR /opt/bd
 ENV HADOOP_HOME=${BASE_DIR}/hadoop
 ENV LOG_TAG "[BASE Hadoop_${HADOOP_VERSION}]:"
 ENV REPOSITORY https://dlcdn.apache.org/hadoop/common
-ENV SPARK_VERSION=4.0.0
-ENV SPARK_HOME=${BASE_DIR}/spark/spark-4.0.0-bin-hadoop3
+ENV SPARK_VERSION=3.5.0
+ENV SPARK_HOME=${BASE_DIR}/spark/spark-3.5.0-bin-hadoop3
 ENV LOG_TAG="[Hadoop ${HADOOP_VERSION} | Spark ${SPARK_VERSION}]:"
 ENV PATH="${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin:${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}"
 ENV PYTHONPATH="${SPARK_HOME}/python/:${PYTHONPATH}"
@@ -21,11 +21,10 @@ ENV PYTHONPATH="${SPARK_HOME}/python/:${PYTHONPATH}"
 # Instalamos el software necesario para Hadoop
 RUN echo "$LOG_TAG actualizando e instalando paquetes básicos" && \
     apt-get update && \
-    apt-get install -y --no-install-recommends openjdk-17-jdk python3 curl locales iputils-ping && \
-    apt-get install -y python3-pip && \
-    pip3 install --no-cache-dir --break-system-packages pyspark==${SPARK_VERSION} && \
+    apt-get install -y --no-install-recommends openjdk-17-jdk python3 curl locales iputils-ping python3-pip && \
+    pip3 install --no-cache-dir pyspark==${SPARK_VERSION} && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists
+    rm -rf /var/lib/apt/lists/*  
 
 # Configuramos el idioma
 RUN echo "$LOG_TAG configurando idioma" && \
@@ -34,13 +33,13 @@ RUN echo "$LOG_TAG configurando idioma" && \
 # Creamos una carpeta para la instalación en /opt
 RUN mkdir -p ${BASE_DIR}
     
-#Creamos una carpeta para la instalación de Apache Spark
+# Creamos una carpeta para la instalación de Apache Spark
 RUN mkdir -p ${SPARK_HOME}
 
 # Cambiamos a la carpeta creada
 WORKDIR ${BASE_DIR}
 
-#Descargamos y configuramos Hadoop y Spark
+# Descargamos y configuramos Hadoop y Spark
 RUN echo "${LOG_TAG} Descargando y configurando Hadoop y Spark..." && \
     # Descargar y descomprimir Hadoop
     curl -fLO "https://dlcdn.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz" && \

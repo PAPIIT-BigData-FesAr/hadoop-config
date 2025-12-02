@@ -1,44 +1,53 @@
 #!/bin/bash
 
-service ssh start
+# Cargar variables de Hadoop
+source /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
 
+# INICIAR SERVICIOS DE NameNode
 HADOOP_HOME=/opt/bd/hadoop/
-SERVICE=${HADOOP_HOME}/bin/hdfs
-DAEMON=namenode
 
-# Formateamos el NameNode en modo no interactivo
-# si existen datos, no se reformatea
-$HADOOP_HOME/bin/hdfs namenode -format -nonInteractive 2> /dev/null
+echo "Iniciando servicios de NameNode..."
 
-# Iniciamos el demonio del namenode y chequeamos si ha arrancado
-${SERVICE} --daemon start ${DAEMON}
-status=$?
-if [ $status -ne 0 ]; then
-  echo "No pudo inicializar el servicio ${DAEMON}: $status"
-  exit $status
+if [ ! -d /var/data/hadoop/hdfs/nn/current ] && [ "${HADOOP_FORMAT_ON_START}" = "true" ]; then
+    echo "Formateando NameNode por primera vez..."
+    $HADOOP_HOME/bin/hdfs namenode -format -force
+    if [ $? -eq 0 ]; then
+        echo "NameNode formateado exitosamente"
+    else
+        echo "Error formateando NameNode"
+        exit 1
+    fi
 fi
 
-# Esperamos a que el demonio esté iniciado
-while ! ps aux | grep ${DAEMON} | grep -q -v grep
-do 
-    sleep 1 
-done
+# Iniciar servicios de NameNode
+echo "Iniciando NameNode..."
+$HADOOP_HOME/bin/hdfs --daemon start namenode
 
-# Esperamos 5 segundos antes de crear los directorios
-sleep 5
+echo "Iniciando SecondaryNameNode..."
+$HADOOP_HOME/bin/hdfs --daemon start secondarynamenode
 
-# Inicia directorios en HDFS
-$HADOOP_HOME/bin/hdfs dfs -mkdir -p /user/hdadmin &&\
-$HADOOP_HOME/bin/hdfs dfs -mkdir -p /tmp/hadoop-yarn/staging &&\
-$HADOOP_HOME/bin/hdfs dfs -chmod -R 1777 /tmp
+# Verificar procesos
+sleep 10 
+echo "Procesos Java en ejecución:"
+jps
 
-# Mientras el demonio esté vivo, el contenedor sigue activo
-while true
-do 
-  sleep 10
-  if ! ps aux | grep ${DAEMON} | grep -q -v grep
-  then
-      echo "El demonio ${DAEMON}  ha fallado"
-      exit 1
-  fi
+# LOOP DE MONITOREO ESPECÍFICO para NameNode
+while true; do 
+    sleep 30
+    
+    # Verificar NameNode
+    if ! jps | grep -q "NameNode"; then
+        echo "NameNode no está ejecutándose - reintentando..."
+        $HADOOP_HOME/bin/hdfs --daemon start namenode
+    fi
+    
+    # Verificar SecondaryNameNode
+    if ! jps | grep -q "SecondaryNameNode"; then
+        echo "SecondaryNameNode no está ejecutándose - reintentando..."
+        $HADOOP_HOME/bin/hdfs --daemon start secondarynamenode
+    fi
+    
+    # VERIFICAR ESTADO DEL NameNode
+    echo "Verificando estado del NameNode..."
+    $HADOOP_HOME/bin/hdfs dfsadmin -report 2>/dev/null || echo "NameNode aún no está listo..."
 done

@@ -1,26 +1,30 @@
 #!/bin/bash
 
-service ssh start
+# Cargar variables de Hadoop
+source /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
 
+
+# INICIAR SERVICIOS DE ResourceManager
 HADOOP_HOME=/opt/bd/hadoop/
-SERVICE=${HADOOP_HOME}/bin/yarn
-DAEMON=resourcemanager
 
-# Iniciamos el demonio del resourcemanager y chequeamos si ha arrancado
-${SERVICE} --daemon start ${DAEMON}
-status=$?
-if [ $status -ne 0 ]; then
-  echo "No pudo inicializar el servicio ${DAEMON}: $status"
-  exit $status
-fi
+echo "Iniciando servicios de ResourceManager..."
 
-# Mientras el demonio esté vivo, el contenedor sigue activo
-while true
-do 
-  sleep 10
-  if ! ps aux | grep ${DAEMON} | grep -q -v grep
-  then
-      echo "El demonio ${DAEMON}  ha fallado"
-      exit 1
-  fi
+# Iniciar ResourceManager
+echo "Iniciando ResourceManager..."
+$HADOOP_HOME/bin/yarn --daemon start resourcemanager
+
+# Verificar procesos
+sleep 5
+echo "Procesos Java en ejecución:"
+jps
+
+# LOOP DE MONITOREO ESPECÍFICO para ResourceManager
+while true; do 
+    sleep 30
+    
+    # Verificar ResourceManager
+    if ! jps | grep -q "ResourceManager"; then
+        echo "ResourceManager no está ejecutándose - reintentando..."
+        $HADOOP_HOME/bin/yarn --daemon start resourcemanager
+    fi
 done

@@ -3,10 +3,8 @@ FROM hadoop-base-image:latest
 
 MAINTAINER https://www.proyectoa.com
 
-# Cambiamos al usuario root
 USER root
 
-# Definimos las variables de entorno
 ENV HADOOP_VERSION 3.3.6
 ENV LOG_TAG "[DNNM Hadoop_${HADOOP_VERSION}]:"
 ENV BASE_DIR /opt/bd
@@ -14,76 +12,44 @@ ENV HADOOP_HOME ${BASE_DIR}/hadoop/
 ENV HADOOP_CONF_DIR ${HADOOP_HOME}/etc/hadoop/
 ENV DATA_DIR /var/data/hadoop/hdfs
 
-# Creamos las carpetas para los datos de HDFS del DataNode y hacemos el usuario hdadmin propietario de ellas
-# En un entorno de producción se deberían indicar varias carpetas separadas
-RUN echo "$LOG_TAG Creando carpetas para los datos de HDFS del DataNode" && \
-    mkdir -p ${DATA_DIR}/dn && chown -R hdadmin:hadoop ${DATA_DIR}
+# Crear TODAS las carpetas necesarias
+RUN echo "$LOG_TAG Creando carpetas para datos y logs" && \
+    mkdir -p ${DATA_DIR}/dn && \
+    mkdir -p /var/data/hadoop/yarn/nm-local && \
+    mkdir -p /var/data/hadoop/yarn/nm-logs && \
+    mkdir -p /opt/bd/hadoop/logs && \
+    mkdir -p /tmp/hadoop-hdadmin && \
+    chown -R hdadmin:hadoop ${DATA_DIR} && \
+    chown -R hdadmin:hadoop /var/data/hadoop/yarn && \
+    chown -R hdadmin:hadoop /opt/bd/hadoop/logs && \
+    chown -R hdadmin:hadoop /tmp/hadoop-hdadmin
 
-# Creamos carpeta para los ficheros de log
-#RUN echo "$LOG_TAG Creando carpeta para los ficheros de log" && \
-#    mkdir ${HADOOP_HOME}/logs
-
-# Copiamos los ficheros de configuración y el script de inicio
-RUN echo "$LOG_TAG Copiando los ficheros de configuración y el script de inicio"
+# Copiar archivos de configuración
 COPY Config-files/core-site.xml ${HADOOP_CONF_DIR}/core-site.xml
 COPY Config-files/hdfs-site-datanode.xml ${HADOOP_CONF_DIR}/hdfs-site.xml
 COPY Config-files/yarn-site-nodemanager.xml ${HADOOP_CONF_DIR}/yarn-site.xml
 COPY Config-files/mapred-site-nodemanager.xml ${HADOOP_CONF_DIR}/mapred-site.xml
 COPY Config-files/hadoop-env.sh ${HADOOP_CONF_DIR}/hadoop-env.sh
-
-# Instala OpenSSH
-RUN apt-get update && apt-get install -y openssh-server && \
-    mkdir /var/run/sshd
-
-# Permite login sin contraseña para root
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-
+COPY Config-files/spark-defaults.conf /opt/bd/spark/spark-3.5.0-bin-hadoop3/conf/
 
 # Script de inicio
 COPY Config-files/start-daemons-dnnm.sh ${BASE_DIR}/start-daemons.sh
 
-COPY Config-files/spark-defaults.conf /opt/bd/spark/spark-4.0.0-bin-hadoop3/conf/
-
-# Establecemos los permisos
+# Permisos del script
 RUN chmod +x ${BASE_DIR}/start-daemons.sh && \
     chown -R hdadmin:hadoop ${BASE_DIR}
 
-# Establecemos los puertos para los servicios web del Datanode
-EXPOSE 9864 9865 9866 9867
+# Puertos
+EXPOSE 9864 9865 8042
 
-# Establecemos los puertos para los servicios web del NodeManager
-EXPOSE 8040 8042 8044 8048
-
-# # Establecemos los puertos para los servicios web del MapReduce
-EXPOSE 50000-50050 50100-50200
-
-# Configuración de SSH para hdadmin
-RUN mkdir -p /home/hdadmin/.ssh \
-    && chown hdadmin:hadoop /home/hdadmin/.ssh \
-    && chmod 700 /home/hdadmin/.ssh \
-    && ssh-keygen -t rsa -P "" -f /home/hdadmin/.ssh/id_rsa \
-    && cat /home/hdadmin/.ssh/id_rsa.pub >> /home/hdadmin/.ssh/authorized_keys \
-    && chmod 600 /home/hdadmin/.ssh/authorized_keys \
-    && chown hdadmin:hadoop /home/hdadmin/.ssh/authorized_keys
-
-# Ajustar permisos para SSH
-RUN chmod 600 /home/hdadmin/.ssh/authorized_keys && \
-    chown hdadmin:hadoop /home/hdadmin/.ssh/authorized_keys
-
-
-# Definimos las variables de entorno
+# Variables de entorno
 ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64/
 ENV HADOOP_HOME ${BASE_DIR}/hadoop/
-ENV HADOOP_CONF_DIR ${HADOOP_HOME}/etc/hadoop/
 ENV PATH ${JAVA_HOME}/bin:${PATH}:${HADOOP_HOME}/bin/:${HADOOP_HOME}/sbin/
+ENV SPARK_EXECUTOR_HOSTNAME=dnnm
 
-# Establecemos el directorio de trabajo
 WORKDIR ${HADOOP_HOME}
 
-# Ejecutamos lo servicios
-RUN echo "$LOG_TAG Iniciando demonios"
 CMD ["/opt/bd/start-daemons.sh"]
 
-# Cambiamos al usuario hdadmin
 USER hdadmin
