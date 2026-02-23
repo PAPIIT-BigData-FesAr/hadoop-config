@@ -1,50 +1,59 @@
 import os
 from dockerspawner import SwarmSpawner
+from oauthenticator.google import GoogleOAuthenticator
 
 c = get_config()
 
-# --- Configuración Básica ---
+# --- Configuración Básica de Red (Swarm) ---
 c.JupyterHub.spawner_class = SwarmSpawner
-# Forzamos al Hub principal a usar todas las interfaces
 c.JupyterHub.hub_ip = '0.0.0.0'
-#Definimos el puerto donde el proxy hablará con el Hub
 c.JupyterHub.hub_port = 8081
-# Le indicamos a los contenedores cómo encontrar al Hub
 c.JupyterHub.hub_connect_ip = 'jupyterhub' 
-# El proxy escucha al exterior en el 8000
 c.JupyterHub.port = 8000
-# Obligamos al proxy a escuchar en todas las interfaces para evitar el VIP binding
 c.JupyterHub.ip = '0.0.0.0'
+
+# ==========================================
+# --- Autenticación Institucional Google ---
+# ==========================================
+c.JupyterHub.authenticator_class = GoogleOAuthenticator
+
+# Pega aquí exactamente los ID y secreto que te dio Google
+c.GoogleOAuthenticator.client_id = ''
+c.GoogleOAuthenticator.client_secret = ''
+
+# IP local del servidor más el servidor DNS nip.io para resolver el dominio dinámicamente
+c.GoogleOAuthenticator.oauth_callback_url = 'http://192.168.10.200.nip.io:8000/hub/oauth_callback'
+
+# Candados de dominio institucional
+c.GoogleOAuthenticator.hosted_domain = ['aragon.unam.mx', 'unam.mx', 'comunidad.unam.mx']
+c.GoogleOAuthenticator.allowed_domains = ['aragon.unam.mx', 'unam.mx', 'comunidad.unam.mx']
+
+# Usa el correo completo como nombre del contenedor en el clúster
+c.GoogleOAuthenticator.username_claim = 'email'
+# ==========================================
+
 # --- Configuración de la Imagen del Alumno ---
 c.SwarmSpawner.image = 'alumno-spark:latest' 
-
-# Red: Debe ser la misma que se define en el docker-compose
 c.SwarmSpawner.network_name = 'hadoop_hadoop-net'
 
-# --- Inyección de Configuración Hadoop (LA MAGIA) ---
-# Esto monta los configs que definiste en el docker-compose DENTRO
-# del contenedor del alumno automáticamente.
+# --- Inyección de Configuración Hadoop (XMLs) ---
 c.SwarmSpawner.configs = {
     'hadoop_core-site.xml': {'target': '/etc/hadoop/conf/core-site.xml'},
     'hadoop_yarn-site-resourcemanager.xml': {'target': '/etc/hadoop/conf/yarn-site.xml'},
     'hadoop_hdfs-site-namenode.xml': {'target': '/etc/hadoop/conf/hdfs-site.xml'}
 }
 
-# --- Variables de Entorno para el Alumno ---
+# --- Variables de Entorno para PySpark ---
 c.SwarmSpawner.environment = {
-    'SPARK_MASTER': 'yarn', # Para que use YARN por defecto
+    'SPARK_MASTER': 'yarn', 
     'HADOOP_CONF_DIR': '/etc/hadoop/conf',
     'YARN_CONF_DIR': '/etc/hadoop/conf',
     'JAVA_HOME': '/usr/lib/jvm/java-17-openjdk-amd64'
 }
 
-# --- Recursos por Alumno ---
-c.SwarmSpawner.mem_limit = '2G' # Límite de RAM para el notebook (Driver)
+# --- Recursos por Alumno (Driver) ---
+c.SwarmSpawner.mem_limit = '2G' 
 c.SwarmSpawner.cpu_limit = 1.0
 
-# --- Autenticación (Dummy para pruebas) ---
-# Esto permite entrar con cualquier usuario/pass. 
-c.JupyterHub.authenticator_class = 'jupyterhub.auth.DummyAuthenticator'
-
-# Borrar contenedores huérfanos
+# Borrar contenedores huérfanos al cerrar sesión
 c.SwarmSpawner.remove = True
