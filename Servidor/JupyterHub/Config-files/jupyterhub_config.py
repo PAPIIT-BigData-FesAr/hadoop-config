@@ -22,11 +22,11 @@ c.GoogleOAuthenticator.client_id = ''
 c.GoogleOAuthenticator.client_secret = ''
 
 # IP local del servidor más el servidor DNS nip.io para resolver el dominio dinámicamente
-c.GoogleOAuthenticator.oauth_callback_url = 'http://192.168.10.200.nip.io:8000/hub/oauth_callback'
-
+c.GoogleOAuthenticator.oauth_callback_url = 'http://cluster.bigdata.unam.mx:8000/hub/oauth_callback'
 # Candados de dominio institucional
 c.GoogleOAuthenticator.hosted_domain = ['aragon.unam.mx', 'unam.mx', 'comunidad.unam.mx']
 c.GoogleOAuthenticator.allowed_domains = ['aragon.unam.mx', 'unam.mx', 'comunidad.unam.mx']
+c.OAuthenticator.allow_all = True
 
 # Usa el correo completo como nombre del contenedor en el clúster
 c.GoogleOAuthenticator.username_claim = 'email'

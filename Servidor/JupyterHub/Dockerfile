@@ -5,6 +5,6 @@ FROM jupyterhub/jupyterhub:latest
 RUN pip install dockerspawner jupyterhub-idle-culler oauthenticator
 
 # Copiamos la configuración que haremos en el paso 3
-COPY Config-files/jupyterhub_config.py /srv/jupyterhub/jupyterhub_config.py
+COPY Config-files/jupyterhub_config.py /etc/jupyterhub/jupyterhub_config.py
 
-CMD ["jupyterhub", "--config", "/srv/jupyterhub/jupyterhub_config.py", "--ip=0.0.0.0"]
+CMD ["jupyterhub", "--config", "/etc/jupyterhub/jupyterhub_config.py", "--ip=0.0.0.0"]
