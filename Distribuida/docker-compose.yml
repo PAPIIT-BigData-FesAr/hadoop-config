@@ -1,0 +1,147 @@
+version: '3.9'
+
+networks:
+  hadoop-net:
+    driver: overlay
+
+configs:
+  core-site.xml:
+    file: ./DataNode-NodeManager/Config-files/core-site.xml
+  hdfs-site-namenode.xml:
+    file: ./NameNode/Config-files/hdfs-site-namenode.xml
+  hdfs-site-datanode.xml:
+    file: ./DataNode-NodeManager/Config-files/hdfs-site-datanode.xml
+  yarn-site-resourcemanager.xml:
+    file: ./ResourceManager/Config-files/yarn-site-resourcemanager.xml
+  yarn-site-nodemanager.xml:
+    file: ./DataNode-NodeManager/Config-files/yarn-site-nodemanager.xml
+  hadoop-env-datanode.sh:
+    file: ./DataNode-NodeManager/Config-files/hadoop-env.sh
+  hadoop-env-namenode.sh:
+    file: ./NameNode/Config-files/hadoop-env.sh
+  hadoop-env-resourcemanager.sh:
+    file: ./ResourceManager/Config-files/hadoop-env.sh
+
+services:
+
+  # -------------------#
+  # NameNode (Manager) #
+  # -------------------#
+  namenode:
+    image: namenode-image:latest
+    hostname: namenode
+    command: /opt/bd/start-daemons.sh
+    ports:
+      - target: 9870
+        published: 9870
+        protocol: tcp
+        mode: host
+      - target: 9000
+        published: 9000
+        protocol: tcp
+        mode: host
+    networks:
+      - hadoop-net
+    configs:
+      - source: core-site.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: hdfs-site-namenode.xml
+        target: /opt/bd/hadoop/etc/hadoop/hdfs-site.xml
+      - source: hadoop-env-namenode.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+    deploy:
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          memory: 4G  
+      placement:
+        constraints:
+          - node.role == manager
+
+  # --------------------------#
+  # ResourceManager (Manager) #
+  # --------------------------#
+  resourcemanager:
+    image: resourcemanager-image:latest
+    hostname: resourcemanager
+    command: /opt/bd/start-daemons.sh
+    ports:
+      - target: 8088
+        published: 8088
+        protocol: tcp
+        mode: host
+    networks:
+      - hadoop-net
+    configs:
+      - source: core-site.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: yarn-site-resourcemanager.xml
+        target: /opt/bd/hadoop/etc/hadoop/yarn-site.xml
+      - source: hadoop-env-resourcemanager.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+    deploy:
+      endpoint_mode: dnsrr
+      resources:
+        limits:
+          memory: 16G  
+      placement:
+        constraints:
+          - node.role == manager
+
+  # ---------------------------------#
+  # DataNode + NodeManager (Workers) #
+  # ---------------------------------#
+  dnnm:
+    image: dnnm-image:latest
+    command: /opt/bd/start-daemons.sh
+    networks:
+      - hadoop-net
+    configs:
+      - source: core-site.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: yarn-site-nodemanager.xml
+        target: /opt/bd/hadoop/etc/hadoop/yarn-site.xml
+      - source: hdfs-site-datanode.xml
+        target: /opt/bd/hadoop/etc/hadoop/hdfs-site.xml
+      - source: hadoop-env-datanode.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+    deploy:
+      endpoint_mode: dnsrr
+      mode: replicated
+      replicas: 12
+      resources:
+        limits:
+          memory: 8G  
+
+    #------------#
+  # JupyterHub #
+  #------------#
+  jupyterhub:
+    image: jupyterhub:latest
+    networks:
+      - hadoop-net
+    ports: 
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jupyterhub_data:/srv/jupyterhub
+    environment:
+      DOCKER_NETWORK_NAME: hadoop-net
+      HUB_IP: jupyterhub
+      DOCKER_JUPYTER_IMAGE: alumno-spark:latest
+      # Genera una llave estática temporal para evitar problemas de reinicio del proxy
+      JUPYTERHUB_CRYPT_KEY: "c3b5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+    configs:
+      - source: core-site.xml
+        target: /srv/jupyterhub/core-site.xml
+      - source: yarn-site-resourcemanager.xml
+        target: /srv/jupyterhub/yarn-site.xml
+      - source: hdfs-site-namenode.xml
+        target: /srv/jupyterhub/hdfs-site.xml
+volumes:
+  jupyterhub_data:
