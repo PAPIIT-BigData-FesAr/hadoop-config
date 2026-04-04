@@ -64,29 +64,30 @@ services:
       resources:
         limits:
           memory: 22G
-        
-#------------#
-# JupyterHub #
-#------------#
-jupyterhub:
-  image: jupyterhub:latest
-  networks:
-    - hadoop-net
-  ports: 
-    - "8000:8000"
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - jupyterhub_data:/srv/jupyterhub
-    - ./NameNode/Config-files/core-site.xml:/srv/jupyterhub/core-site.xml
-    - ./ResourceManager/Config-files/yarn-site-resourcemanager.xml:/srv/jupyterhub/yarn-site.xml
-    - ./NameNode/Config-files/hdfs-site-namenode.xml:/srv/jupyterhub/hdfs-site.xml
-  environment:
-    DOCKER_NETWORK_NAME: hadoop-net
-    HUB_IP: jupyterhub
-    DOCKER_JUPYTER_IMAGE: alumno-spark:latest
-    JUPYTERHUB_CRYPT_KEY: "c3b5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
-  deploy:
-    replicas: 1
+
+  #------------#
+  # JupyterHub #
+  #------------#
+  jupyterhub:
+    image: jupyterhub:latest
+    container_name: jupyterhub
+    networks:
+      - hadoop-net
+    ports: 
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jupyterhub_data:/srv/jupyterhub
+      - ./NameNode/Config-files/core-site.xml:/srv/jupyterhub/core-site.xml
+      - ./ResourceManager/Config-files/yarn-site-resourcemanager.xml:/srv/jupyterhub/yarn-site.xml
+      - ./NameNode/Config-files/hdfs-site-namenode.xml:/srv/jupyterhub/hdfs-site.xml
+    environment:
+      DOCKER_NETWORK_NAME: hadoop-net
+      HUB_IP: jupyterhub
+      DOCKER_JUPYTER_IMAGE: alumno-spark:latest
+      JUPYTERHUB_CRYPT_KEY: "c3b5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
+    deploy:
+      replicas: 1
 
 volumes:
   jupyterhub_data:
