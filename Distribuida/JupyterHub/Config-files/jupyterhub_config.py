@@ -38,9 +38,9 @@ c.SwarmSpawner.network_name = 'hadoop_hadoop-net'
 
 # --- Inyección de Configuración Hadoop (XMLs) ---
 c.SwarmSpawner.configs = {
-    'hadoop_core-site.xml': {'target': '/etc/hadoop/conf/core-site.xml'},
-    'hadoop_yarn-site-resourcemanager.xml': {'target': '/etc/hadoop/conf/yarn-site.xml'},
-    'hadoop_hdfs-site-namenode.xml': {'target': '/etc/hadoop/conf/hdfs-site.xml'}
+    'hadoop_core-site-alumno-spark.xml': {'target': '/etc/hadoop/conf/core-site.xml'},
+    'hadoop_yarn-site-alumno-spark.xml': {'target': '/etc/hadoop/conf/yarn-site.xml'},
+    'hadoop_hdfs-site-alumno-spark.xml': {'target': '/etc/hadoop/conf/hdfs-site.xml'}
 }
 
 # --- Variables de Entorno para PySpark ---

@@ -1,4 +1,3 @@
-# Dockerfile.hub
 FROM jupyterhub/jupyterhub:latest
 
 # Instalamos el plugin para Docker Swarm

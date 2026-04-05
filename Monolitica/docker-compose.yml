@@ -4,6 +4,49 @@ networks:
   hadoop-net:
     driver: bridge
 
+configs:
+  ### Imagen: alumno-spark ###
+  core-site-alumno-spark.xml:
+    file: ./AlumnoSpark/Config-files/core-site.xml
+  spark-defaults-alumno-spark.conf:
+    file: ./AlumnoSpark/Config-files/spark-defaults.conf
+  yarn-site-alumno-spark.xml:
+    file: ./AlumnoSpark/Config-files/yarn-site.xml
+
+  ### Imagen: dnnm-image ###
+  core-site-dnnm.xml:
+    file: ./DataNode-NodeManager/Config-files/core-site.xml
+  hadoop-env-dnnm.sh:
+    file: ./DataNode-NodeManager/Config-files/hadoop-env.sh
+  hdfs-site-dnnm.xml:
+    file: ./DataNode-NodeManager/Config-files/hdfs-site.xml
+  mapred-site-dnnm.xml:
+    file: ./DataNode-NodeManager/Config-files/mapred-site.xml
+  spark-defaults-dnnm.conf:
+    file: ./DataNode-NodeManager/Config-files/spark-defaults.conf
+  yarn-site-dnnm.xml:
+    file: ./DataNode-NodeManager/Config-files/yarn-site.xml
+
+  ### Imagen: namenode-image ###
+  core-site-namenode.xml:
+    file: ./NameNode/Config-files/core-site.xml
+  hadoop-env-namenode.sh:
+    file: ./NameNode/Config-files/hadoop-env.sh
+  hdfs-site-namenode.xml:
+    file: ./NameNode/Config-files/hdfs-site.xml
+  
+  ### Imagen: resourcemanager-image ###
+  core-site-resourcemanager.xml:
+    file: ./ResourceManager/Config-files/core-site.xml
+  hadoop-env-resourcemanager.sh:
+    file: ./ResourceManager/Config-files/hadoop-env.sh
+  mapred-site-resourcemanager.xml:
+    file: ./ResourceManager/Config-files/mapred-site.xml
+  spark-defaults-resourcemanager.conf:
+    file: ./ResourceManager/Config-files/spark-defaults.conf
+  yarn-site-resourcemanager.xml:
+    file: ./ResourceManager/Config-files/yarn-site.xml
+
 services:
 
   # -------------------#
@@ -15,16 +58,27 @@ services:
     hostname: namenode
     command: /opt/bd/start-daemons.sh
     ports:
-      - "9870:9870"
-      - "9000:9000"
+      - target: 9870
+        published: 9870
+        protocol: tcp
+        mode: host
+      - target: 9000
+        published: 9000
+        protocol: tcp
+        mode: host
     networks:
       - hadoop-net
-    volumes:
-      - ./NameNode/Config-files/core-site.xml:/opt/bd/hadoop/etc/hadoop/core-site.xml
-      - ./NameNode/Config-files/hdfs-site-namenode.xml:/opt/bd/hadoop/etc/hadoop/hdfs-site.xml
-      - ./NameNode/Config-files/hadoop-env.sh:/opt/bd/hadoop/etc/hadoop/hadoop-env.sh
-    environment:
-      - HADOOP_FORMAT_ON_START=true
+    configs:
+      - source: core-site-namenode.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: hadoop-env-namenode.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+      - source: hdfs-site-namenode.xml
+        target: /opt/bd/hadoop/etc/hadoop/hdfs-site.xml
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
   # --------------------------#
   # ResourceManager (Manager) #
@@ -35,13 +89,27 @@ services:
     hostname: resourcemanager
     command: /opt/bd/start-daemons.sh
     ports:
-      - "8088:8088"
+      - target: 8088
+        published: 8088
+        protocol: tcp
+        mode: host
     networks:
       - hadoop-net
-    volumes:
-      - ./ResourceManager/Config-files/core-site.xml:/opt/bd/hadoop/etc/hadoop/core-site.xml
-      - ./ResourceManager/Config-files/yarn-site-resourcemanager.xml:/opt/bd/hadoop/etc/hadoop/yarn-site.xml
-      - ./ResourceManager/Config-files/hadoop-env.sh:/opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+    configs:
+      - source: core-site-resourcemanager.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: hadoop-env-resourcemanager.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+      - source: mapred-site-resourcemanager.xml
+        target: /opt/bd/hadoop/etc/hadoop/mapred-site.xml
+      - source: spark-defaults-resourcemanager.conf
+        target: /opt/bd/spark/spark-3.5.2-bin-hadoop3/conf/spark-defaults.conf
+      - source: yarn-site-resourcemanager.xml
+        target: /opt/bd/hadoop/etc/hadoop/yarn-site.xml
+    deploy:
+      resources:
+        limits:
+          memory: 5G
 
   # ---------------------------------#
   # DataNode + NodeManager (Worker)  #
@@ -53,13 +121,19 @@ services:
     command: /opt/bd/start-daemons.sh
     networks:
       - hadoop-net
-    volumes:
-      - ./DataNode-NodeManager/Config-files/core-site.xml:/opt/bd/hadoop/etc/hadoop/core-site.xml
-      - ./DataNode-NodeManager/Config-files/yarn-site-nodemanager.xml:/opt/bd/hadoop/etc/hadoop/yarn-site.xml
-      - ./DataNode-NodeManager/Config-files/hdfs-site-datanode.xml:/opt/bd/hadoop/etc/hadoop/hdfs-site.xml
-      - ./DataNode-NodeManager/Config-files/hadoop-env.sh:/opt/bd/hadoop/etc/hadoop/hadoop-env.sh
-      - ./DataNode-NodeManager/Config-files/mapred-site.xml:/opt/bd/hadoop/etc/hadoop/mapred-site.xml
-      - ./DataNode-NodeManager/Config-files/spark-defaults.conf:/opt/bd/spark/spark-3.5.0-bin-hadoop3/conf/spark-defaults.conf
+    configs:
+      - source: core-site-dnnm.xml
+        target: /opt/bd/hadoop/etc/hadoop/core-site.xml
+      - source: hadoop-env-dnnm.sh
+        target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
+      - source: hdfs-site-dnnm.xml
+        target: /opt/bd/hadoop/etc/hadoop/hdfs-site.xml
+      - source: mapred-site-dnnm.xml
+        target: /opt/bd/hadoop/etc/hadoop/mapred-site.xml
+      - source: spark-defaults-dnnm.conf
+        target: /opt/bd/spark/spark-3.5.2-bin-hadoop3/conf/spark-defaults.conf
+      - source: yarn-site-dnnm.xml
+        target: /opt/bd/hadoop/etc/hadoop/yarn-site.xml
     deploy:
       resources:
         limits:
@@ -73,8 +147,11 @@ services:
     container_name: jupyterhub
     networks:
       - hadoop-net
-    ports: 
-      - "8000:8000"
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - jupyterhub_data:/srv/jupyterhub
@@ -87,7 +164,9 @@ services:
       DOCKER_JUPYTER_IMAGE: alumno-spark:latest
       JUPYTERHUB_CRYPT_KEY: "c3b5a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0"
     deploy:
-      replicas: 1
+      resources:
+        limits:
+          memory: 2G
 
 volumes:
   jupyterhub_data:

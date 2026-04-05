@@ -1,7 +1,4 @@
-# Usamos como base el contenedor creado anteriormente
 FROM hadoop-base-image:latest
-
-MAINTAINER https://www.proyectoa.com
 
 USER root
 
@@ -24,16 +21,7 @@ RUN echo "$LOG_TAG Creando carpetas para datos y logs" && \
     chown -R hdadmin:hadoop /opt/bd/hadoop/logs && \
     chown -R hdadmin:hadoop /tmp/hadoop-hdadmin
 
-# Copiar archivos de configuración
-COPY Config-files/core-site.xml ${HADOOP_CONF_DIR}/core-site.xml
-COPY Config-files/hdfs-site-datanode.xml ${HADOOP_CONF_DIR}/hdfs-site.xml
-COPY Config-files/yarn-site-nodemanager.xml ${HADOOP_CONF_DIR}/yarn-site.xml
-COPY Config-files/mapred-site-nodemanager.xml ${HADOOP_CONF_DIR}/mapred-site.xml
-COPY Config-files/hadoop-env.sh ${HADOOP_CONF_DIR}/hadoop-env.sh
-COPY Config-files/spark-defaults.conf /opt/bd/spark/spark-3.5.0-bin-hadoop3/conf/
-
-# Script de inicio
-COPY Config-files/start-daemons-dnnm.sh ${BASE_DIR}/start-daemons.sh
+COPY Config-files/start-daemons.sh ${BASE_DIR}/start-daemons.sh
 
 # Permisos del script
 RUN chmod +x ${BASE_DIR}/start-daemons.sh && \
