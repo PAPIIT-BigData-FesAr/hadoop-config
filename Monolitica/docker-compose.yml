@@ -2,7 +2,8 @@ version: '3.9'
 
 networks:
   hadoop-net:
-    driver: bridge
+    driver: overlay
+
 
 configs:
   ### Imagen: alumno-spark ###
@@ -75,6 +76,8 @@ services:
         target: /opt/bd/hadoop/etc/hadoop/hadoop-env.sh
       - source: hdfs-site-namenode.xml
         target: /opt/bd/hadoop/etc/hadoop/hdfs-site.xml
+    environment:
+      - HADOOP_FORMAT_ON_START=true
     deploy:
       resources:
         limits:
@@ -155,9 +158,6 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - jupyterhub_data:/srv/jupyterhub
-      - ./NameNode/Config-files/core-site.xml:/srv/jupyterhub/core-site.xml
-      - ./ResourceManager/Config-files/yarn-site-resourcemanager.xml:/srv/jupyterhub/yarn-site.xml
-      - ./NameNode/Config-files/hdfs-site-namenode.xml:/srv/jupyterhub/hdfs-site.xml
     environment:
       DOCKER_NETWORK_NAME: hadoop-net
       HUB_IP: jupyterhub
