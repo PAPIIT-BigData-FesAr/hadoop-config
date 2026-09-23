@@ -9,7 +9,6 @@ ENV HADOOP_HOME ${BASE_DIR}/hadoop/
 ENV HADOOP_CONF_DIR ${HADOOP_HOME}/etc/hadoop/
 ENV DATA_DIR /var/data/hadoop/hdfs
 
-# Crear TODAS las carpetas necesarias
 RUN echo "$LOG_TAG Creando carpetas para datos y logs" && \
     mkdir -p ${DATA_DIR}/dn && \
     mkdir -p /var/data/hadoop/yarn/nm-local && \
@@ -23,14 +22,11 @@ RUN echo "$LOG_TAG Creando carpetas para datos y logs" && \
 
 COPY Config-files/start-daemons.sh ${BASE_DIR}/start-daemons.sh
 
-# Permisos del script
 RUN chmod +x ${BASE_DIR}/start-daemons.sh && \
     chown -R hdadmin:hadoop ${BASE_DIR}
 
-# Puertos
 EXPOSE 9864 9865 8042
 
-# Variables de entorno
 ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64/
 ENV HADOOP_HOME ${BASE_DIR}/hadoop/
 ENV PATH ${JAVA_HOME}/bin:${PATH}:${HADOOP_HOME}/bin/:${HADOOP_HOME}/sbin/

@@ -14,11 +14,6 @@ RUN echo "$LOG_TAG Creando carpetas para logs y temporales" && \
     chown -R hdadmin:hadoop ${HADOOP_HOME}/logs && \
     chown -R hdadmin:hadoop /tmp/hadoop-hdadmin
 
-COPY Config-files/core-site.xml ${HADOOP_CONF_DIR}/core-site.xml
-COPY Config-files/yarn-site-resourcemanager.xml ${HADOOP_CONF_DIR}/yarn-site.xml
-COPY Config-files/mapred-site-resourcemanager.xml ${HADOOP_CONF_DIR}/mapred-site.xml
-COPY Config-files/hadoop-env.sh ${HADOOP_CONF_DIR}/hadoop-env.sh
-
 COPY Config-files/start-daemons.sh ${BASE_DIR}/start-daemons.sh
 
 RUN chmod +x ${BASE_DIR}/start-daemons.sh && \
