@@ -58,6 +58,8 @@ services:
     container_name: namenode
     hostname: namenode
     command: /opt/bd/start-daemons.sh
+    environment:
+      - HADOOP_FORMAT_ON_START=true
     ports:
       - target: 9870
         published: 9870
@@ -151,8 +153,8 @@ services:
     networks:
       - hadoop-net
     ports:
-      - target: 8080
-        published: 8080
+      - target: 8000
+        published: 8000
         protocol: tcp
         mode: host
     volumes:
